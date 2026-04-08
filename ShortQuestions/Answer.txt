@@ -1,0 +1,84 @@
+MySQL Questions
+1. Referential integrity ensures that foreign key values in a child table must match existing primary key values in a parent table, maintaining consistent and valid relationships between tables.
+Referential integrity enforces consistency at both schema level (table creation order) and data level (insert/update/delete operations).
+(1) For example, during table creation stage, dept_id is a foreign key in student, referential integrity requires that the parent table must be created before the child table.
+Thus, the following code will result in error: "Failed to open the referenced table 'department'"
+INSERT INTO student (student_id, student_name, gender, birth_date, dept_id)
+VALUES 
+(1001, 'John Zhang', 'Male', '2001-05-01', 101),
+(1002, 'Lisa Li', 'Female', '2002-08-12', 102),
+(1003, 'Kevin Wang', 'Male', '2000-11-21', 201);
+(2) During the insert operation, the following will also result in an error because dept_id = 999 does NOT exist in department:
+INSERT INTO student VALUES (2, 'Bob', 999);
+(3) During the delete operation, the following will also result in an error because student table still references 101:
+DELETE FROM department WHERE dept_id = 101;
+
+
+2. A JOIN in SQL combines rows from two or more tables based on a related column between them. 
+There are different types of JOIN:
+(1) Inner join returns only rows where matching values exist in both tables:
+SELECT s.student_name, d.dept_name
+FROM student s
+JOIN department d ON s.dept_id = d.dept_id;
+(2) Left join returns all rows from the left table, and NULLs for unmatched rows in the right table. 
+This returns all students, regardless of whether they have a department.
+SELECT s.student_name, d.dept_name
+FROM student s
+LEFT JOIN department d ON s.dept_id = d.dept_id;
+(3) Right join returns all rows from the right table, and NULLs for unmatched rows in the left table. 
+This returns all departments, regardless of whether they have students.
+SELECT s.student_name, d.dept_name
+FROM student s
+RIGHT JOIN department d ON s.dept_id = d.dept_id;
+
+(4) Full outer join returns all rows from both tables, filling NULLs where there is no match.
+This returns all students and all departments, including students without departments and departments without students.
+SELECT s.student_name, d.dept_name
+FROM student s
+LEFT JOIN department d ON s.dept_id = d.dept_id
+UNION
+SELECT s.student_name, d.dept_name
+FROM student s
+RIGHT JOIN department d ON s.dept_id = d.dept_id;
+
+
+
+Other Questions:
+1. A Developer API is meant for developers to access an application’s features or data. It can be an HTTP API, like a REST API, or through methods in developer libraries that you call directly in code. Developers use it when they want to integrate with the system, automate workflows, or build new applications. 
+A User API is designed for end users to interact with the system, usually through a frontend application. It’s often also an HTTP API, but it’s meant to be consumed by the client app for user-facing features.
+
+
+2. A REST API usually consists of:
+Endpoint / URL: the resource location.
+HTTP Method: defines the operation, including GET, POST, PUT, DELETE, PATCH, OPTION, and HEAD.
+Request Headers: metadata like authentication, such as Authorization: Bearer <token>.
+Request Body: data sent to the server (for POST/PUT/PATCH).
+Response Body: data returned by the server. 
+Response Status Code – HTTP status indicating success or failure, such as 200 OK, 404 Not Found, 500 Internal Server Error.
+
+
+3. Types of HTTP method include:
+GET retrieves data and is safe and idempotent, meaning it doesn’t change anything and repeated calls return the same result. 
+POST creates new resources and is not idempotent; multiple calls can create multiple entries. 
+PUT updates or replaces a resource entirely and is idempotent, so repeating the same request keeps the resource the same. 
+PATCH applies partial updates and is generally not idempotent. 
+DELETE removes a resource and is idempotent because deleting the same item multiple times has the same effect. 
+HEAD is similar to GET, but it only fetches the headers of a response, not the body, which is useful to check metadata like content type, length, or last-modified without downloading the whole resource. 
+OPTIONS checks what methods are allowed on a resource, and is safe and idempotent.
+
+
+4. The Authentication field in an HTTP header is how the client tells the server who it is and proves it has permission to access a resource. 
+This can be done in several ways: for example, with a Bearer token like Authorization: Bearer <JWT>, or using Basic authentication with a username and password encoded in base64. 
+When the server receives this header, it validates the credentials or token and determines whether the request is allowed.
+
+
+5. The Cookies field is used to maintain state between a client and server over multiple requests. 
+Browsers automatically send cookies back to the server in the Cookie header, like Cookie: session_id=11111, so the server can recognize the user or remember preferences. 
+Cookies often store session IDs, user settings, or security tokens. 
+They are especially important because HTTP is stateless by default, so cookies give the server a way to track ongoing interactions without forcing users to re-authenticate every request.
+
+
+6. HTTP response headers provide metadata about the server’s response and guide the client on how to handle it. 
+They can indicate the content format (Content-Type: application/json), caching rules (Cache-Control: no-cache), security information, or set cookies (Set-Cookie: session_id=11111). 
+They are necessary because they mandate the client’s behavior and tell it how to interpret the response, whether to cache it, how to manage authentication, and how to handle cookies, etc.
+Response headers make communication between client and server structured, secure, and predictable.
