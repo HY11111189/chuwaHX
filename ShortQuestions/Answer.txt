@@ -1,0 +1,66 @@
+Testing related:
+1. Unit Testing tests the smallest testable units of a program, such as functions or methods, unit testing does not rely on any real dependencies, such as DB, network and filesystem.
+It is used to verify the correctness of individual components, and it is deterministic and fast.
+For example, testing a calculation method with mocked inputs without connecting to a database is a unit test.
+
+2. Functional Testing tests functions of a single component/module, or a compelete application, from user's prespective. It tests if business
+requirements/features are fullfilled.
+For example, testing whether a user can successfully log in and be redirected to the dashboard is a functional test.
+
+3. Integration Testing tests the interactions between multiple components or modules. Compared to unit testing, it uses real DB and services. 
+It is used to verify that the collaboration between components or modules is correct.
+For example, testing whether OrderService correctly saves data into the database through OrderRepository.
+
+4. Regression Testing means that after modifying the program or environment, re-run previously run tests to confirm that no new errors
+have been introduced, mainly appears in CICD pipeline. It ensures that after changes, existing functionality is still correct.
+Compared to smoke testing, regression testing is more comprehensive and verifies all existing functionalities rather than just basic system health.
+For example, after adding a new payment feature, re-running all previous tests to ensure login and order features still work.
+
+5. Smoke Testing is build verification test, it is part of the CICD pipeline, it verifies if the newly deployed executable
+performs basic functions, if yes, then continue with futher tests and stages, if not, it stops the pipeline. It ensures new executable performs basic functions.
+In other words, it is a quick health check after build/deployment.
+Compared to regression testing, smoke testing is shallow and quick, focusing only on whether the system can run.
+For example, checking whether the application starts successfully and key APIs like /login return a response.
+
+6. Performance Testing tests the performance and response time of a system under a specific workload, such as response time, throughput - QPS/Query per-second, and latency percentiles etc.
+It verifies the performance and efficiency of the system.
+Compared to stress testing, performance testing evaluates system behavior under normal expected load rather than extreme conditions.
+It is commonly used before release or to optimize the system.
+
+7. Stress Testing tests the capacity of a system by simulating an environment with workloads or data volumes beyond normal levels, it ensures that the system can still work normally under high pressure.
+Compared to performance testing, stress testing pushes the system beyond normal limits to identify breaking points.
+For example, we may increase load from 100 QPS to 200 QPS, to test whether the system will crash and does it degrade gracefully. 
+It is commonly used in high-scale systems and distributed systems. 
+
+8. A/B Testing tests two versions in production with real users. It is about product optimation, not correctness testing. A/B testing does not verify correctness but evaluates which version performs better.
+It is commonly used for UI/UX designs and product improvement. 
+
+9. End-to-End Testing ensures end-to-end functionalities work as expected. It is mainly performed by QA (Quality Assurance Engineers).
+It tests whether the entire system flow from start to finish. Such as to test the login, browse, add to cart, order and payment system. 
+Compared to integration testing, end-to-end testing covers the entire system workflow rather than interactions between a few components.
+It is used to validate complete workflows and catch integration issues across systems. 
+
+10. User Acceptance Testing means that end user tests the software to confirm that it can perform the required tasks under actual conditions. It ensures that the software meets user needs and expectations.
+It is validation by real users or business stakeholders, and is commonly used before release and client delivery. 
+
+
+Environment related:
+1. Development: The development environment is where developers write, modify, and initially test code. It typically runs on a developer’s local machine or a lightweight shared server, and it is highly flexible and frequently changing. 
+In this environment, developers focus on verifying small pieces of functionality, so it is primarily used for unit testing and early-stage debugging. 
+Because speed and iteration are the priorities, the setup is often simplified—for example, using in-memory databases or mocked services instead of real external dependencies. 
+Compared to other environments, development is the least stable and least representative of the real system, but it provides the fastest feedback loop, allowing developers to quickly detect and fix logical errors before code is shared with others.
+
+2. QA (Quality Assurance): The QA environment is a more controlled and stable setting where testers (and sometimes developers) validate whether the system behaves correctly as a whole. 
+Unlike the development environment, QA uses more realistic configurations, often including real databases, APIs, and integrated components. 
+This environment is primarily used for integration testing, functional testing, and end-to-end testing, since its purpose is to ensure that different parts of the system work together and that business requirements are correctly implemented. 
+Compared to development, QA is more stable and closer to real-world conditions, but still allows for testing flexibility. It serves as a bridge between isolated development work and production-level validation.
+
+3. Pre-prod/Staging: The pre-production (or staging) environment is designed to closely mirror the production environment in terms of infrastructure, configuration, and data patterns. Its primary purpose is to act as the final checkpoint before deployment to real users. 
+In this environment, teams typically run regression testing to ensure that recent changes have not broken existing functionality, as well as performance testing to verify that the system meets required speed and scalability benchmarks. 
+Compared to the QA environment, staging is less about discovering functional bugs and more about validating system readiness under realistic conditions. 
+It is significantly more stable and controlled, because any issue found here could directly impact production if not resolved.
+
+4. Production: The production environment is the live system where real users interact with the application. Unlike all other environments, it operates with real data, real traffic, and real business impact, so stability, security, and reliability are critical. 
+Testing in production is limited and carefully controlled; instead of traditional testing, teams rely on monitoring, logging, and techniques like A/B testing to evaluate new features safely. In some cases, user acceptance testing may also occur here in the form of real user feedback. 
+Compared to all other environments, production carries the highest risk but also provides the most accurate representation of how the system performs in reality. 
+It is the final stage where all prior testing efforts are validated under actual conditions.

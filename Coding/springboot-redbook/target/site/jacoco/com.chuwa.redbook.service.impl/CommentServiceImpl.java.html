@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CommentServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">redbook</a> &gt; <a href="index.source.html" class="el_package">com.chuwa.redbook.service.impl</a> &gt; <span class="el_source">CommentServiceImpl.java</span></div><h1>CommentServiceImpl.java</h1><pre class="source lang-java linenums">package com.chuwa.redbook.service.impl;
+
+import com.chuwa.redbook.dao.CommentRepository;
+import com.chuwa.redbook.dao.PostRepository;
+import com.chuwa.redbook.entity.Comment;
+import com.chuwa.redbook.entity.Post;
+import com.chuwa.redbook.exception.BlogAPIException;
+import com.chuwa.redbook.exception.ResourceNotFoundException;
+import com.chuwa.redbook.payload.CommentDto;
+import com.chuwa.redbook.service.CommentService;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * @author b1go
+ * @date 6/23/22 11:14 PM
+ */
+@Service
+<span class="fc" id="L24">public class CommentServiceImpl implements CommentService {</span>
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+
+    /**
+     * use this modelMapper to replace the mapToDto, mapToEntity methods.
+     */
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Override
+    public CommentDto createComment(long postId, CommentDto commentDto) {
+<span class="fc" id="L40">        Comment comment = modelMapper.map(commentDto, Comment.class);</span>
+        // retrieve post entity by id
+<span class="fc" id="L42">        Post post = postRepository.findById(postId)</span>
+<span class="fc" id="L43">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Post&quot;, &quot;id&quot;, postId));</span>
+        // set post to comment entity
+<span class="fc" id="L45">        comment.setPost(post);</span>
+
+        // comment entity to DB
+<span class="fc" id="L48">        Comment savedComment = commentRepository.save(comment);</span>
+
+<span class="fc" id="L50">        return modelMapper.map(savedComment, CommentDto.class);</span>
+    }
+
+    @Override
+    public List&lt;CommentDto&gt; getCommentsByPostId(long postId) {
+        // retrieve comments by postId
+<span class="fc" id="L56">        List&lt;Comment&gt; comments = commentRepository.findByPostId(postId);</span>
+
+        // convert list of comment entities to list of comment dto's
+<span class="fc" id="L59">        return comments.stream().map(comment -&gt; modelMapper.map(comment, CommentDto.class)).collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public CommentDto getCommentById(Long postId, Long commentId) {
+        // retrieve post entity by id
+<span class="fc" id="L65">        Post post = postRepository.findById(postId)</span>
+<span class="fc" id="L66">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Post&quot;, &quot;id&quot;, postId));</span>
+
+        // retrieve comment by id
+<span class="fc" id="L69">        Comment comment = commentRepository.findById(commentId)</span>
+<span class="fc" id="L70">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Comment&quot;, &quot;id&quot;, commentId));</span>
+
+        // 业务逻辑
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (!comment.getPost().getId().equals(post.getId())) {</span>
+<span class="fc" id="L74">            throw new BlogAPIException(HttpStatus.BAD_REQUEST, &quot;Comment does not belong to post&quot;);</span>
+        }
+
+<span class="fc" id="L77">        return modelMapper.map(comment, CommentDto.class);</span>
+    }
+
+    @Override
+    public CommentDto updateComment(Long postId, Long commentId, CommentDto commentDtoRequest) {
+        // retrieve post entity by id
+<span class="fc" id="L83">        Post post = postRepository.findById(postId)</span>
+<span class="pc" id="L84">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Post&quot;, &quot;id&quot;, postId));</span>
+
+        // retrieve comment by id
+<span class="fc" id="L87">        Comment comment = commentRepository.findById(commentId)</span>
+<span class="pc" id="L88">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Comment&quot;, &quot;id&quot;, commentId));</span>
+
+        // 业务逻辑
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (!comment.getPost().getId().equals(post.getId())) {</span>
+<span class="fc" id="L92">            throw new BlogAPIException(HttpStatus.BAD_REQUEST, &quot;Comment does not belong to post&quot;);</span>
+        }
+
+<span class="fc" id="L95">        comment.setName(commentDtoRequest.getName());</span>
+<span class="fc" id="L96">        comment.setEmail(commentDtoRequest.getEmail());</span>
+<span class="fc" id="L97">        comment.setBody(commentDtoRequest.getBody());</span>
+
+<span class="fc" id="L99">        Comment updatedComment = commentRepository.save(comment);</span>
+
+<span class="fc" id="L101">        return modelMapper.map(updatedComment, CommentDto.class);</span>
+    }
+
+    @Override
+    public void deleteComment(Long postId, Long commentId) {
+        // retrieve post entity by id
+<span class="fc" id="L107">        Post post = postRepository.findById(postId)</span>
+<span class="fc" id="L108">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Post&quot;, &quot;id&quot;, postId));</span>
+
+        // retrieve comment by id
+<span class="fc" id="L111">        Comment comment = commentRepository.findById(commentId)</span>
+<span class="fc" id="L112">                .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Comment&quot;, &quot;id&quot;, commentId));</span>
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (!comment.getPost().getId().equals(post.getId())) {</span>
+<span class="fc" id="L115">            throw new BlogAPIException(HttpStatus.BAD_REQUEST, &quot;Comment does not belong to post&quot;);</span>
+        }
+
+<span class="fc" id="L118">        commentRepository.delete(comment);</span>
+<span class="fc" id="L119">    }</span>
+
+    public static CommentDto commentServiceMapperUtil(Comment comment) {
+<span class="nc" id="L122">        ModelMapper modelMapper = new ModelMapper();</span>
+<span class="nc" id="L123">        return modelMapper.map(comment, CommentDto.class);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
