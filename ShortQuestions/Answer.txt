@@ -1,0 +1,54 @@
+Q1
+JVM：executes Java bytecode, provides platform independence.
+JRE: JVM + core libraries needed to run Java applications, which is needed to run Java programs.
+JDK: JRE + development tools (compiler debugger, etc.), which is needed to develop and compile Java programs.
+Answer: To run a compiled program, you need JRE.
+
+
+Q2
+Output is 10.
+Because int is a primitive type, and value is copied when assigned. Changing be does not affect a. 
+
+
+Q3
+Output is 100. Array is a reference type. 
+arr2 references the same array as arr1. Thus, changing arr2[0] changes the array that arr1 points to.
+
+
+Q4
+Output is: 
+(1) true, because == compares references. s1 and s2 point to the same string literal in the string pool
+(2) false, because s3 is a new object created by new String(), which is a different reference
+(3) true, because .equals() compares content
+
+
+Q5
+Final variable: value cannot be changed after initialization.
+Final method: cannot be overridden by subclasses.
+Final class: cannot be extended.
+
+
+Q6
+Static variable: belongs to the classs and is hared by all instances.
+Instance variable: each object has its own copy.
+Example use: we can use a counter to track the number of objects created of a class.
+
+
+Q7
+A compile-time error will occur, as x is final and thus cannot be reassigned. 
+
+
+Q8
+Abstraction: expose only necessary details, hide complex implementation.
+Encapsulation: hide data using private variables and provide public getters/setters.
+Inheritance: a class can inherit properties and methods from another class.
+Polymorphism: objects can take many forms through method overloading and overriding.
+
+
+Q9
+Encapsulation means to hide data using private variables and provide public getters/setters.
+Through this way, programmers can control access and maintain data integrity, preventing invalid changes.
+
+
+Q10
+Output is 3, because the counter is a static variable and is shared across all instances.
