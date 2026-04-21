@@ -1,0 +1,45 @@
+1. Three pillars of observability are:
+(1) Metrics: Aggregated statistics over a period of time. They are used for alerting and identifying "what" is happening (e.g., CPU usage is at 90%).
+(2) Logs: Immutable, timestamped records of discrete events that occurred within the system. They provide the "why" by showing detailed context or error messages from a specific point in time.
+(3) Traces: Records of the path of a request through a distributed system. They show the path of a single request to identify "where" bottlenecks or failures occur in a microservices chain.
+
+2. Four common metics types are:
+(1) Counter: A cumulative metric that only ever increases or resets to zero on restart.
+Use Case: Counting events that only increase, e.g. tracking total requests received or total errors encountered.
+(2) Gauge: A metric that represents a single numerical value that can arbitrarily go up or down.
+Use Case: to measure values that can go up and down, e.g. measuring current memory usage, temperature, or the number of concurrent active users.
+(3) Histogram: Samples observations (like request durations) and counts them in configurable buckets, i.e. distribution of values into buckets. It allows for calculating quantiles.
+Use Case: To track distribution of values, e.g. measuring request latency to see how many requests finished in under 200ms.
+(4) Summary: Similar to a histogram, it calculates configurable quantiles over a sliding time window.
+Use Case: When you need precise server-side calculations of percentiles (e.g., the 99th percentile latency).
+
+3. Structured Logging is the practice of treating logs as data sets (typically in JSON format) rather than as strings of plain text.
+It is preferred because:
+Is it machine parseable: Automated tools (ELK stack, Datadog) can easily parse fields like user_id or status_code without complex Regular Expressions.
+It is searchable, and easy to query and filter: You can run precise queries (e.g., "Find all logs where response_time > 500ms and env == 'prod'").
+It can be indexed efficiently.
+It supports correlation across services (Consistency): It enforces a schema, avoids ambiguity of free-text logs making it easier to correlate logs across different services in a microservice architecture. Easier debugging across services.
+
+4. Trace: The complete story / entire lifecycle of a transaction or request as it moves through a distributed system. 
+It has unique identifier: Trace ID, It is a collection of Spans.
+Span: The fundamental building block of a trace. It represents a single unit of work (e.g., a database query or an API call) within a specific service, containing start/end times, duration, operation name and metadata.
+It can have parent span (which creates hierarchy). It contains tags, logs and baggage. 
+Context Propagation: The mechanism that passes trace context ("trace IDs" and "parent span IDs") across service boundaries, usually via HTTP headers(traceparent, tracestate). 
+This ensures that Service B knows it is part of the same Trace started by Service A.
+
+5. The monitoring server (Prometheus) actively reaches out to the application’s "scrape endpoint" (e.g., /metrics) to collect data at regular intervals.
+The application hosts a small HTTP server that exposes current metric values. Prometheus is configured with a list of these targets and fetches the data periodically.
+For the pull model, it offers simpler service design. Services only expose /metrics, there is no need to know where to send data.
+Better control & reliability: Prometheus controls scrape intervals and retries. It's easy to tell if a target is "down".
+Service discovery friendly: It automatically finds new services (Kubernetes, etc.).
+It's easier to scale horizontally; prevents "DDOSing" the monitor with too many updates.
+Centralized security: only Prometheus needs access to targets.
+But it is not ideal for short-lived jobs. If a job finishes before scrape, data is lost.
+It requires the application to host an endpoint, and Prometheus must reach all targets; difficult for nodes behind NAT or restricted firewalls.
+Scaling challenges: for large systems, there are a large amount of scrape targets, which can verload Prometheus.
+
+Push model is better for short-lived jobs (serverless/lambda); 
+No need for central server to reach services; easier to send data through firewalls.
+But the monitoring server can be overwhelmed by high-frequency pushes; harder to track "up/down" status.
+It's harder to manage consistency.
+There is no easy health detection (silent failures).
