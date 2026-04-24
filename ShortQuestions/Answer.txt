@@ -1,0 +1,61 @@
+Q1
+In a payment system, the delivery semantic that is should be used is Exactly-once.
+
+At-most-once: The message is processed zero or one time. 
+Problem: If the consumer crashes after fetching the message but before processing, the payment is lost. The user pays, but the order is never marked as paid. 
+
+At-least-once: The message is guaranteed to be processed, but potentially multiple times.
+Problem: If the consumer processes the payment but crashes before sending the acknowledgment (ACK), it will pull the same message again. The user is double-charged ($200 instead of $100).
+
+To implement Exactly-once, we could use:
+Idempotency Key: Generate a unique order_id or transaction_id. In the database, use a unique constraint on this ID to ensure the same payment cannot be processed twice.
+Transactional Outbox/Atomic Commits: Use Kafka Transactions (PID and Sequence Numbers) to ensure that the message offset is committed only if the database transaction (deducting money) succeeds.
+
+
+Q2
+The code calls availableConnections.poll(maxWaitMs, TimeUnit.MILLISECONDS). 
+The thread will block (wait) for up to maxWaitMs for another thread to call a "release" method that puts a connection back into availableConnections.
+If a connection becomes available within the timeout, it is returned.
+If no connection is returned within the time limit, it throws a SQLException: Timeout waiting for connection.
+
+
+Q3
+The "Get-then-Delete" operation is not atomic.
+We may have a race condition: Thread A checks the value, and it matches. But right before Thread A calls jedis.del(), its lock expires and Thread B acquires it. Thread A then deletes the lock that now belongs to Thread B.
+We could use a Lua Script to ensure the check-and-delete happens atomically on the Redis server.
+
+
+Q4
+1. CLOSED - C. Normal operation, requests are allowed through, failures are being counted
+2. OPEN - B. All requests are blocked immediately without calling the downstream service
+3. HALF_OPEN - A. Allows a limited number of test requests to check if the service has recovered
+
+
+Q5
+The quorum ensures that a lock is only granted if a majority of independent nodes agree. This prevents a single node failure or network partition from causing two different clients to believe they both hold the same lock.
+The minimum quorum is 3. This ensures that even if 2 nodes fail, the system remains available, but no two clients can reach a majority simultaneously.
+
+
+Q6
+It provides at-least-once because the acknowledgment (offset commit) and the business logic are not part of a single atomic transaction.
+The Failure Scenario: If orderService.processOrder(order) completes successfully (e.g., the database is updated), but the application crashes or the network fails before the method returns, Kafka will not receive the auto-commit.
+When the consumer restarts, it will fetch the same message again because the offset was never updated in Kafka. The order will be processed a second time.
+
+To achieve exactly-once, we would need to either:
+Make the processing idempotent (so a second execution does nothing); or
+Use Kafka Transactions to commit the offset and the database change together as one atomic unit.
+
+
+Q7
+Test-on-borrow executes a validation query every time getConnection() is called. It adds a round-trip to the database for every single request.
+For background validation, a separate thread periodically checks idle connections in the pool.Validation happens asynchronously; getConnection() returns immediately.
+
+Background Validation is generally preferred for high-performance systems. 
+"Test-on-borrow" is safer for ensuring a connection isn't stale, but it significantly increases the response time of the application because it turns one database operation into two.
+
+
+Q8
+Watching only the immediate predecessor (the node "before" yourself) is a crucial optimization to prevent the Herd Effect (or Thundering Herd).
+The Herd Effect Problem: If 1,000 nodes all watch the same root lock node or the current lock holder, then when the lock is released, ZooKeeper must send 1,000 notifications simultaneously. This can cause a massive spike in network traffic and CPU usage on the ZooKeeper ensemble.
+When a node only watches the node "before" itself, when one lock is deleted, only one node (lock-002) receives a notification and wakes up to check if it now holds the lock. 
+This ensures the system scales linearly and avoids overwhelming the coordination service.
