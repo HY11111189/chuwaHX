@@ -1,0 +1,122 @@
+Q1
+Feature	Method Overloading	Method Overriding
+Definition	Creating multiple methods in the same class with the same name but different signatures.	Redefining a superclass method in a subclass with the same signature and return type.
+Polymorphism Type	Compile-time (Static / Early binding).	Runtime (Dynamic / Late binding).
+Location	Occurs within the same class (or within a subclass via inheritance).	Must occur across Parent-Child classes (Inheritance).
+Method Name	Must be the same.	Must be the same.
+Parameters	Must be different (in number, type, or order).	Must be exactly the same.
+Return Type	Can be different (does not affect overloading).	Must be the same or a covariant type (a subclass of the original return type).
+Access Modifier	Can be different (any access modifier allowed).	Cannot be more restrictive than the parent method's modifier (e.g., a protected method cannot be overridden as private).
+private / final methods	Can be overloaded freely within the class.	Cannot be overridden because they are not visible or are explicitly locked against modifications in subclasses.
+Performance	Better performance because method binding is resolved during compilation.	Slightly slower performance due to the overhead of dynamic lookup (vtable resolution) at runtime.
+Primary Purpose	To improve code readability and convenience by allowing similar operations on different data types.	To provide a specific implementation of a behavior that is already defined by a superclass.
+
+
+Q2
+The output is Bark!
+The reference variable a is of type Animal (compile-time type), but the actual object it points to on the heap is an instance of Dog (runtime type).
+At compile-time, the compiler checks if the Animal class has a makeSound() method. It does, so compilation succeeds. 
+At runtime, the Java Virtual Machine (JVM) looks at the actual object type (Dog) rather than the reference type. 
+Since Dog overrides makeSound(), the JVM executes the subclass implementation, printing "Bark!".
+
+
+Q3
+Java omits multiple inheritance with classes to avoid ambiguity, complexity, and to keep the language simple and manageable.
+
+The "Diamond Problem" occurs when a class extends two or more parent classes that both inherit from a common grandparent class, and both parent classes override a method from the grandparent.
+Imagine class A has a method foo().
+Class B and class C inherit from A and both override foo() with different implementations.
+Class D inherits from both B and C via multiple inheritance.
+If someone calls d.foo() on an instance of D, the compiler has no way of knowing whether it should execute B's version or C's version of the method. This creates a collision.
+
+How Java solves it: interfaces. Java allows a class to implement multiple interfaces instead of inheriting from multiple classes. 
+Because interfaces historically only declared methods without implementations, there was no risk of inheriting conflicting logic.
+
+
+Q4
+The code will fail to compile.
+Abstract classes cannot be innstantiated. Shape is explicitly declared as an abstract class. 
+By definition, abstract classes are incomplete blueprints and cannot be directly instantiated using the new keyword.
+To fix this, we must first create a concrete subclass (e.g., class Circle extends Shape) that implements the abstract getArea() method, and then instantiate that subclass.
+
+
+Q5
+Feature	Interface	Abstract Class
+Methods Allowed	Abstract, default, static, and private methods (private added in Java 9).	Any type of method (completely abstract to fully concrete with any logic).
+Fields / Variables	Strictly restricted to public static final constants.	Any type of field, including instance fields, primitives, and object references.
+Constructors	No, interfaces cannot define or use constructors.	Yes, can have constructors to initialize state for subclasses via super().
+Multiple Inheritance	Yes, a single class can implement multiple interfaces.	No, a class can extend only one abstract parent class.
+Access Modifiers	Methods default to public. Private methods are allowed for internal helpers.	Can use any access modifier (public, protected, private, or package-private).
+State Retention	Cannot maintain state (stateless contract).	Can maintain state via instance fields that change value over time.
+Primary Use Case	Used to define peripheral capabilities, behaviors, or strict contracts across unrelated classes.	Used to build a strong ancestral identity and share common foundational implementation down a line of related classes.
+Java Keyword	Implemented using the implements keyword.	Inherited using the extends keyword.
+
+
+Q6
+Output is: 
+Animal eating
+Meow!
+
+Upcasting (Line 1): Casting a reference from a subclass type to a superclass type (Animal a = new Cat();).
+How it works: This happens automatically (implicitly) in Java because a Cat is-an Animal.
+Limitation: Once upcast, you can only access methods defined in the parent class (Animal). 
+This is why Line 3 (a.meow();) would cause a compilation error if uncommented—the compiler only checks the reference type (Animal), which doesn't possess a meow() method.
+
+Downcasting (Line 4): Casting a reference from a superclass type back down to a subclass type (Cat c = (Cat) a;).
+How it works: This must be done explicitly because the compiler cannot guarantee at compile-time that the generic Animal reference actually points to a Cat object on the heap.
+Safety Check: Using instanceof before downcasting prevents a ClassCastException at runtime in case the underlying object is a different subclass (like a Dog).
+
+
+Q7
+Rules for Overriding equals()
+equals() implementation must fulfill the following contract for any non-null references x, y, and z:
+Reflexive: x.equals(x) must return true.
+Symmetric: If x.equals(y) is true, then y.equals(x) must be true.
+Transitive: If x.equals(y) is true and y.equals(z) is true, then x.equals(z) must be true.
+Consistent: Repeated calls to x.equals(y) must consistently return the same result as long as no information used in the comparison is modified.
+Null-Comparison: x.equals(null) must always return false.
+
+Why You Must Also Override hashCode()
+The core contract of Java states: If two objects are equal according to equals(Object), they must return the exact same integer value from hashCode().
+If you violate this rule, data structures that rely on hashing (like HashMap, HashSet, or Hashtable) will break:
+When you insert a key-value pair into a HashMap, the map calculates an array index using the key's hashCode().
+If you search for that key later using an identical object with a different hash code, the map looks in the wrong structural bucket, completely bypassing your custom equals() check. You will end up with duplicate logical keys or fail to retrieve values you just inserted.
+
+
+Q8
+Shallow Copy: Duplicates the top-level object structure, but copies the references to any internal nested objects. Both original and copied objects point to the same nested memory locations.
+Deep Copy: Duplicates the top-level object structure and recursively clones all nested objects, creating completely independent memory footprints.
+
+What happens to the Address field?
+In a Shallow Copy: The new Person object gets a copy of the memory address reference pointing to the existing Address object. 
+If you change the city inside the copy's address, the original person's city will also change because they share the exact same Address instance.
+In a Deep Copy: An entirely new Address object is instantiated on the heap, and its internal values are explicitly copied over. 
+If you modify the city on the copied person, the original person's address remains unchanged and completely safe.
+
+
+Q9
+The output is Taking off from Flyable.
+When a class implements multiple interfaces that contain default methods with identical signatures, a conflict occurs. Java handles this strictly:
+Compulsory Override: To resolve the ambiguity, the developer is forced to explicitly override the conflicting method inside the implementing class (Duck).
+Failing to override takeOff() in Duck would cause a compilation error.
+Explicit Routing: Inside the overridden method, you can target a specific parent interface's implementation using the explicit syntax: InterfaceName.super.methodName();. 
+Because Duck specifically invokes Flyable.super.takeOff();, it executes and prints the message defined in Flyable.
+
+
+Q10
+To successfully overload a method in Java, the method must change its parameter list (either by parameter count, type, or position sequence). 
+Changes to return types or access modifiers alone are ignored by the compiler when distinguishing overloads.
+
+Method A (public int calculate(int a, int b, int c)): VALID
+The parameter count changed from 2 to 3 parameters.
+
+Method B (public double calculate(double a, double b)): VALID
+The parameter data types changed from int to double.
+
+Method C (public double calculate(int a, int b)): INVALID
+The parameters are identical to the original method (int, int). Modifying the return type to double is not enough to overload a method. 
+The compiler cannot differentiate which method you are calling if you execute calculator.calculate(5, 10); without capturing the return value.
+
+Method D (private int calculate(int x, int y)): INVALID
+Changing parameter variable names (x, y instead of a, b) and changing the access modifier to private does not alter the underlying method signature.
+The arguments are still exactly int, int, which creates an illegal duplicate method declaration in the class.
