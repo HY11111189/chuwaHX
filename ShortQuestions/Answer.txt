@@ -1,0 +1,249 @@
+Q1
+The Master Blueprint: java.lang.Throwable
+Every class that can be used with Java's exception handling mechanism (try, catch, throw, throws) must be a subclass of Throwable. 
+If a class doesn't inherit from Throwable, it cannot be thrown.
+
+Branch 1: java.lang.Error (System Failures)
+Errors represent severe infrastructure or environmental problems outside the application's immediate control. 
+They are unchecked because a program typically cannot recover from them, and trying to catch them is usually futile.
+Characteristics: Indicates that the Java Virtual Machine (JVM) has run out of resources or encountered an unrecoverable failure.
+Examples:
+OutOfMemoryError: Thrown when the JVM cannot allocate an object because it is out of memory, and no more memory could be made available by the garbage collector.
+StackOverflowError: Occurs when an application recurses too deeply, exhausting the thread's call stack space.
+
+Branch 2: java.lang.Exception (Application Failures)
+Exceptions represent conditions that a well-written application should anticipate, catch, and handle gracefully. 
+This branch splits cleanly into two categories based on when they are checked:
+
+A. Checked Exceptions (Compile-Time Exceptions)
+These are subclasses of Exception excluding the RuntimeException family. 
+They generally represent external environmental issues that your code must actively anticipate (like a missing file or an interrupted network connection).
+Compilation Rule: The compiler strictly enforces the "Catch or Declare" rule. 
+You must wrap the code in a try-catch block or declare the exception using throws.
+Examples:
+IOException: Thrown when an input/output operation fails or is interrupted (e.g., trying to read a file that doesn't exist).
+SQLException: Thrown when an error occurs while accessing or manipulating a database.
+
+B. Unchecked Exceptions (Runtime Exceptions)
+These are subclasses that inherit directly from java.lang.RuntimeException. 
+They almost always represent programming bugs, logical errors, or improper use of an API.
+Compilation Rule: The compiler ignores them during build time. 
+You are not forced to write code to catch or declare them, though you can.
+Examples:
+NullPointerException: Thrown when an application attempts to use null in a case where an object instance is required (e.g., calling a method on a null reference).
+ArithmeticException: Thrown when an exceptional arithmetic condition has occurred, such as dividing an integer by zero (int result = 10 / 0;).
+
+
+Q2
+The fundamental difference between these two lies in when they are validated: at compile-time or at runtime.
+Feature,Checked Exception,Unchecked Exception
+Definition,Exceptions that inherit from Exception but not from RuntimeException.,Exceptions that inherit directly from RuntimeException or Error.
+Compiler Enforcement,Yes. The compiler strictly forces you to handle it.,No. The compiler does not force you to handle or declare it.
+Nature of Problem,"Represents predictable failures outside the immediate control of the code (e.g., missing files, network drops).","Represents programming errors, bugs, or logical flaws (e.g., bad inputs, API misuse)."
+Examples,"IOException, SQLException","NullPointerException, ArrayIndexOutOfBoundsException"
+
+The compiler forces you to handle Checked Exceptions. 
+If a method throws a checked exception, you must either handle it using a try-catch block or declare it in the method signature using the throws keyword. 
+Failing to do so will result in a compilation error.
+
+
+Q3
+Output is: 
+try
+finally
+3
+
+(1) try block executes: The test() method starts, enters the try block, and prints "try".
+(2) Return statement reached: The code hits return 1; inside the try block. 
+The JVM evaluates this expression and holds the return value (1) in a temporary slot. 
+However, it cannot actually exit the method yet because a finally block is present.
+(3) finally block executes: Before control is returned to the caller, the finally block must execute. It prints "finally".
+(4) Return value overridden: Inside the finally block, the JVM encounters return 3;.
+A return statement inside a finally block abruptly discards any pending return values or exceptions from the try or catch blocks. 
+The previous value of 1 is completely overwritten by 3.
+(5) Main prints results: The method returns 3 to main(), which prints it to the console.
+Note: Putting a return statement inside a finally block is considered a bad programming practice,
+because it swallows returns and unhandled exceptions, leading to confusing code behavior.
+
+
+Q4
+Feature,throw,throws
+Location,Written inside the method body or block of code.,Written in the method signature (declaration).
+Quantity,Can only throw one exception instance at a time.,Can declare multiple exception classes separated by commas.
+Syntax Target,Followed by an instance of an exception object (new Exception()).,"Followed by exception class names (IOException, SQLException)."
+Core Function,Actively executes the handover. It halts current execution and flings the exception object up the call stack.,Passively warns callers. It serves as a contractual disclaimer that this method might pass this exception up.
+Type Compatibility,Used for both checked and unchecked exceptions.,Primarily crucial for checked exceptions; declaring unchecked exceptions is optional.
+
+
+import java.io.FileNotFoundException;
+
+public class ExceptionSystem {
+
+    // 1. 'throws' establishes a contract: "Calling me might result in a FileNotFoundException."
+    // It is followed by the CLASS name.
+    public static void readFile(String fileName) throws FileNotFoundException {
+        if (fileName == null || fileName.isEmpty()) {
+            
+            // 2. 'throw' takes action. It instantiates and flings an OBJECT.
+            // Execution halts here; control transfers immediately back to the caller.
+            throw new FileNotFoundException("System error: The file path provided is empty.");
+        }
+        System.out.println("Reading data from: " + fileName);
+    }
+
+    // 3. Because loadConfiguration calls readFile(), it must also 'throws' or use try-catch
+    public static void loadConfiguration() throws FileNotFoundException {
+        readFile(""); 
+    }
+
+    public static void main(String[] args) {
+        try {
+            loadConfiguration();
+        } catch (FileNotFoundException e) {
+            // 4. The thrown object is caught and handled here
+            System.err.println("Application Alert: " + e.getMessage());
+        }
+    }
+}
+
+
+Q5
+Code Behavior:
+The code will compile successfully. Even though RuntimeException is thrown repeatedly, it is an unchecked exception, so the compiler does not demand explicit try-catch or throws handling for it.
+When run, it will terminate abruptly with a RuntimeException: Error 3.
+
+Detailed Step-by-Step Execution:
+The try block executes and throws RuntimeException("Error 1").
+The catch (Exception e) block intercepts Error 1. Inside this block, a new exception, RuntimeException("Error 2"), is thrown.
+Before Error 2 can propagate out of the method, the finally block mandates execution.
+The finally block runs and throws RuntimeException("Error 3").
+Just like a return statement in a finally block overrides previous returns (as seen in Question 3), 
+a thrown exception in a finally block suppresses and completely obliterates any exception previously thrown in the try or catch blocks.
+Consequently, Error 1 and Error 2 are completely lost ("swallowed"), and only Error 3 is propagated back up to the console stack trace.
+
+
+Q6
+1. Can an Enum extend another class?
+No. An enum in Java cannot explicitly extend any other class.
+Why: When the Java compiler compiles an enum, it implicitly and automatically makes it extend the java.lang.Enum<E> class under the hood. 
+Because Java only supports single inheritance for classes, an enum cannot extend any other class since it has already used up its single inheritance slot.
+Alternative: An enum can, however, have its own fields, constructors, and methods directly inside its body.
+
+2. Can an Enum implement an interface?
+Yes. An enum can implement one or multiple interfaces.
+Why: Java allows a class (or an enum) to implement an arbitrary number of interfaces. 
+This is highly useful for assigning common behaviors to different enums. 
+For example, you can have an enum implement Runnable or a custom interface to provide state-specific logic.
+
+
+Q7
+Output:
+PENDING -> 0 -> 0
+PROCESSING -> 1 -> 1
+COMPLETED -> 2 -> 2
+
+Status.values() returns an array containing all the constants of the enum in the exact order they are declared.
+s.name() returns the exact string name of the enum constant as declared (e.g., "PENDING").
+s.getCode() invokes the user-defined getter method, returning the custom int code value passed into the constructor (e.g., 0, 1, 2).
+s.ordinal() returns the numerical position (zero-indexed) of the enum constant based on its declaration order. 
+In this specific example, the custom codes happen to perfectly match the internal ordinal indices.
+
+
+Q8
+Aspect,Aggregation,Composition
+Relationship Type,"
+""Has-A"" relationship (Weak association / Loose bonding).",
+"""Part-Of"" relationship (Strong association / Tight bonding)."
+
+Lifecycle,
+"Independent. If the container object is destroyed, the contained objects can continue to exist independently.",
+"Dependent. The contained objects cannot exist without the container. If the container is destroyed, the parts are destroyed with it."
+
+Object Creation Location,
+Contained objects are typically created outside the container and passed in via a constructor or setter.,"
+Contained objects are typically created inside the container (e.g., in the container's constructor or field initialization)."
+
+UML Symbol,
+An empty (hollow) diamond (♢) at the container class end.,
+A filled (solid) black diamond (⧫) at the container class end.
+
+Example,
+"Department and Professor. If the department closes, professors still exist and can join other departments.",
+House and Room. A room cannot exist independently without the physical structure of the house.
+
+
+Q9
+The relationship demonstrated in this code is Aggregation.
+
+Reasoning:
+Independent Lifecycles: The Book object b1 is instantiated outside the Library context (Book b1 = new Book("Java Programming");).
+External Injection: The book is passed into the library instance using an operational method (lib.addBook(b1);).
+Survival on Destruction: If the lib object is set to null or garbage collected, the b1 object remains fully intact and accessible in memory through the b1 reference variable. 
+The library does not own or manage the lifetime of the book; it merely holds a reference to it.
+
+
+Q10
+The Three Key Elements of a Singleton Pattern:
+(1) Private Constructor: Prevents external classes from creating new instances of the class using the new keyword.
+(2) Private Static Instance: A private static variable of the same class type that holds the single, unique instance of the class.
+(3) Public Static Getter Method: A public static method (conventionally named getInstance()) that provides global access to the single instance, handling lazy or eager instantiation safely.
+
+Why must the constructor be private?
+The constructor must be private to enforce control over instance creation.
+If the constructor were left public or default (package-private), any client code could freely invoke new MySingleton() multiple times, 
+completely violating the fundamental constraint of the pattern—which guarantees that one, and only one, instance of the class exists throughout the entire lifecycle of the application.
+
+
+Q11
+The fundamental difference between these two approaches lies in when the single instance of the class is allocated in memory.
+
+Eager Initialization
+The instance is created at the time of class loading, before any client code even calls getInstance().
+Pros: Thread-safe without requiring explicit synchronization mechanisms; very simple to implement.
+Cons: The instance is created even if the application never winds up using it, 
+which can waste memory and slow down application startup if the initialization is resource-heavy.
+
+Which creates the instance first? Eager Initialization creates the instance first.
+
+Lazy Initialization
+The instance is created on-demand, only when getInstance() is called for the very first time.
+Pros: Efficient resource management; memory is only consumed when the instance is explicitly needed.
+Cons: Requires careful implementation (like synchronization or a double-checked locking mechanism) to ensure thread safety in multi-threaded environments.
+
+
+Q12
+No, this implementation is incorrect and unsafe. It breaks the Singleton design pattern rules in two major ways:
+1. The Problems
+Public Constructor: The constructor public Singleton() { } is declared public. 
+This allows any external class to freely execute new Singleton(), bypassing getInstance() completely and creating multiple instances.
+
+Not Thread-Safe: The getInstance() method is vulnerable to race conditions. 
+If two threads enter the if (instance == null) block simultaneously when the instance is still null, 
+both will evaluate the condition as true, and both will instantiate a new Singleton object.
+
+2. The Solution
+To fix it, we must make the constructor private, make the instance variable volatile to prevent memory reordering issues, 
+and implement thread synchronization using Double-Checked Locking.
+
+public class Singleton {
+    // volatile ensures that changes made by one thread are immediately visible to others
+    private static volatile Singleton instance;
+
+    // Fix 1: Constructor must be private
+    private Singleton() { }
+
+    public static Singleton getInstance() {
+        // First check (no locking overhead if already initialized)
+        if (instance == null) {
+            // Synchronize on the class block to ensure only one thread enters
+            synchronized (Singleton.class) {
+                // Second check (verify another thread didn't initialize it while waiting)
+                if (instance == null) {
+                    instance = new Singleton();
+                }
+            }
+        }
+        return instance;
+    }
+}
+
