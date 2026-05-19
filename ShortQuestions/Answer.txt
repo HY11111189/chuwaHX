@@ -1,0 +1,197 @@
+Q1
+A Functional Interface is an interface that contains exactly one abstract method. 
+It can contain any number of default or static methods, but it must only possess a single abstract method. 
+Functional interfaces provide the target types for lambda expressions and method references.
+
+The annotation used to mark a functional interface is @FunctionalInterface.
+Is it mandatory? No. If an interface meets the structural requirement of having exactly one abstract method, 
+the Java compiler will automatically treat it as a functional interface regardless of whether the annotation is present.
+Why use it? It acts as an informative safeguard. 
+If a developer accidentally adds a second abstract method to an interface marked with @FunctionalInterface, 
+the compiler will flag it as a compilation error, preventing breaking changes down the line.
+
+Two Built-In Examples in java.util.function
+1. Predicate<T>
+Represents a condition or predicate (boolean-valued function) of one argument. 
+It is commonly used for filtering data streams.
+
+Abstract Method Signature: boolean test(T t)
+Explanation: It accepts a single input object of type T and returns a primitive boolean (true or false).
+
+2. Function<T, R>
+Represents a function that accepts one argument and produces a result. 
+It is typically used for transforming or mapping an object from one state or type to another.
+
+Abstract Method Signature: R apply(T t)
+Explanation: It accepts a single input argument of type T and returns a resulting value of type R.
+
+
+Q2
+Output is:
+Hello from Greeting
+And hello from Person
+
+The Diamond Problem Trap: The Person class implements two interfaces (Greeting and Farewell), 
+both of which define a default method with the exact same signature: default void sayHello(). 
+This introduces a method conflict (similar to the diamond problem in multiple inheritance).
+Mandatory Override: Because of this conflict, the compiler forces the Person class to explicitly override sayHello() to resolve the ambiguity. 
+Failing to override it would cause a compilation failure.
+Explicit Interface Invocation: Inside the overridden method, Person uses the special syntax Greeting.super.sayHello();. 
+This tells the JVM to bypass the conflict by specifically invoking the default implementation belonging to the Greeting interface first, 
+which prints "Hello from Greeting".
+Method Completion: Execution continues to the next line in the Person method body,
+printing "And hello from Person".
+
+
+Q3
+Step 1: Identify the boilerplate structural code.
+We can safely strip away new Comparator<String>() { @Override public int compare ... }.
+Step 2: Isolate the method parameters and body. 
+This leaves us with just the parameter list and the execution logic block:
+(String s1, String s2) { return s1.length() - s2.length(); }
+Step 3: Insert the lambda arrow operator. 
+We connect the parameters to the expression block using the structural arrow operator (->):
+(String s1, String s2) -> { return s1.length() - s2.length(); }
+Step 4: Leverage Type Inference. 
+Since the interface is explicitly defined as Comparator<String>, Java's compiler infers that s1 and s2 must be String objects. 
+We can eliminate the explicit type declarations inside the parameter parentheses:
+(s1, s2) -> { return s1.length() - s2.length(); }
+Step 5: Simplify single-expression blocks.
+Because our execution body consists of a single statement that simply returns a value, 
+we can remove the curly braces { }, strip away the explicit return keyword, and drop the inner semicolon. 
+The evaluation of the expression is implicitly returned.
+Comparator<String> comparator = (s1, s2) -> s1.length() - s2.length();
+
+
+Q4
+// A: Valid
+// B: Invalid
+You cannot use the explicit return keyword without wrapping the method body in curly braces {}
+// C: Invalid
+Because curly braces are used, the compiler expects a valid block of statements. x * 2; 
+is an isolated expression, not a statement, and it is missing a return keyword.
+// D: Valid
+// E: Valid
+// F: Valid
+
+
+Q5
+1. x -> System.out.println(x)	B. System.out::println	Bound Instance
+2. s -> s.toUpperCase()	D. String::toUpperCase	Unbound Instance
+3. x -> Math.abs(x)	C. Math::abs	Static
+4. () -> new ArrayList<>()	A. ArrayList::new	Constructor
+5. (s1, s2) -> s1.compareTo(s2)	E. String::compareTo	Unbound Instance
+
+
+Q6
+The difference between these two factory methods lies in how they handle null arguments passed into them.
+Optional.of(value): Use this when you are absolutely certain that the value is never null. 
+If the argument passed in is null, it throws a NullPointerException immediately.
+Optional.ofNullable(value): Use this when the value might be null. 
+If the value is present, it returns an Optional wrapping that value. 
+If it is null, it safely returns an empty Optional (Optional.empty()) instead of throwing an exception.
+
+When running the provided code, the application will crash on line 2 with a NullPointerException. 
+It will not finish executing or print anything to the console.
+Because value is null, Optional.of(value) throws a runtime exception immediately, halting the program.
+
+
+Q7
+Output:
+--- Using orElse ---
+Creating default value
+Result: "Hello"
+--- Using orElseGet ---
+Result: "Hello"
+
+The crucial difference between these two methods is when and how the fallback value is evaluated:
+orElse(T other) (Eager Evaluation): The parameter inside orElse() is evaluated as a standard method argument regardless of whether the Optional is empty or full.
+In the code above, even though opt contains "Hello", Java must evaluate the argument expressions before invoking the method. 
+Therefore, createDefault() is executed, printing "Creating default value", 
+only for its returned value "Default" to be discarded because opt was not empty.
+
+orElseGet(Supplier<? extends T> other) (Lazy Evaluation): It accepts a Supplier functional interface. 
+The Supplier.get() method is executed only if the Optional is empty.
+Because opt contains "Hello" (it is full), the lambda expression () -> createDefault() is never invoked. 
+As a result, nothing is printed to the console during this step, saving performance overhead.
+
+Rule of Thumb: Always use orElseGet() if computing the default value involves expensive operations 
+(like a database query or an API call) to avoid unnecessary processing.
+
+
+Q8
+Both methods are intermediate operations used to transform data elements, but they process shapes differently:
+map() (1-to-1 Transformation): It transforms each individual element in a stream into exactly one other element. 
+If a stream of Order objects is mapped using a method that returns a List, the result is a nested stream: Stream<List<Product>>.
+flatMap() (1-to-Many Flattening Transformation): It transforms each element into a stream of elements and then flattens all of those individual streams into a single, 
+combined continuous stream. It unpacks nested collections so you go from Stream<List<Product>> straight to Stream<Product>.
+
+List<String> allProductNames = orders.stream()
+    .flatMap(order -> order.getProducts().stream()) // Flattens Stream<List<Product>> into Stream<Product>
+    .map(Product::getName)                          // Transforms Stream<Product> into Stream<String>
+    .toList();                                      // Collects results into a List
+
+
+Q9
+Output:
+Stream created
+Calling findFirst...
+Filtering: 1
+Filtering: 2
+Mapping: 2
+Result: 20
+
+Explanation of Lazy Evaluation
+Streams are designed to be lazy. 
+This means intermediate operations (like filter() and map()) do absolutely no processing when they are declared. 
+They merely build a recipe or execution pipeline.
+
+Processing only triggers when a terminal operation (like findFirst(), collect(), or forEach()) is invoked. 
+This design allows for a massive optimization technique known as short-circuiting:
+When numbers.stream().filter(...).map(...) is declared, nothing prints. 
+The console outputs "Stream created".
+stream.findFirst() is called. The stream engine now pulls elements through the pipeline one by one as needed, 
+rather than processing the entire collection upfront.
+Element 1: Evaluated by .filter(). It outputs "Filtering: 1". Since 1 % 2 == 0 is false, it is discarded.
+Element 2: Evaluated by .filter(). It outputs "Filtering: 2". Since 2 % 2 == 0 is true, it passes down to .map().
+Element 2 in Map: .map() receives 2, outputs "Mapping: 2", and transforms it to 20.
+Short-Circuit: The terminal operation findFirst() now has its first matching value (20). 
+It immediately stops processing the remaining numbers (3, 4, 5). 
+The rest of the list is never looked at, saving performance.
+
+
+Q10
+Anti-Pattern 1: Optional as a Method Parameter (processProducts)
+Passing an Optional as a method argument forces the caller to wrap parameters unnecessarily and often leads to ugly null checking anyway
+ (e.g., if the user passes a literal null instead of Optional.empty()). 
+ It adds boilerplate instead of reducing it. 
+ Instead, pass a raw List or handle empty collections gracefully.
+
+Anti-Pattern 2: Returning null from an Optional Method (calculateTotal)
+Returning a literal null from a method whose return type is Optional completely breaks the core design philosophy of Optional. 
+The whole point of using Optional is to protect the caller from a NullPointerException. 
+Returning null forces the caller to write an explicit if (result == null) check, rendering the Optional wrapper useless. 
+You should return Optional.empty() instead.
+
+public class ProductService {
+
+    // Fix 1: Accept List directly. Fall back to an empty list if null is provided.
+    public void processProducts(List<Product> products) {
+        Optional.ofNullable(products)
+                .orElse(Collections.emptyList())
+                .forEach(this::process); // Declarative, pipeline iteration
+    }
+
+    // Fix 2: Return Optional.empty() instead of null. Cleaned up logic via Stream API.
+    public Optional<BigDecimal> calculateTotal(List<Product> products) {
+        if (products == null || products.isEmpty()) {
+            return Optional.empty(); // Safely signal that no value is present
+        }
+
+        BigDecimal total = products.stream()
+                .map(Product::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return Optional.of(total);
+    }
+}
