@@ -1,0 +1,545 @@
+Q2
+public class Singleton {
+    // 1. volatile ensures changes are visible to other threads and prevents reordering
+    private static volatile Singleton instance;
+
+    // 2. Private constructor
+    private Singleton() {}
+
+    // 3. Double-checked locking
+    public static Singleton getInstance() {
+        if (instance == null) { // First check (no lock)
+            synchronized (Singleton.class) { // Lock only once
+                if (instance == null) { // Second check (with lock)
+                    instance = new Singleton();
+                }
+            }
+        }
+        return instance;
+    }
+}
+
+
+Q3
+Direct Thread: Create an instance of Thread and pass it a Runnable.
+Thread Pool: Use ExecutorService. It is best practice to use thread pools to avoid the overhead of constant thread creation/destruction.
+// Direct
+Thread t = new Thread(() -> System.out.println("Running in thread"));
+t.start();
+
+// Thread Pool
+ExecutorService executor = Executors.newFixedThreadPool(10);
+executor.submit(() -> System.out.println("Running in pool"));
+executor.shutdown();
+
+
+Q4
+| Runnable                                | Callable                    |
+| --------------------------------------- | --------------------------- |
+| Does not return result                  | Returns result              |
+| Cannot throw checked exception directly | Can throw checked exception |
+| Used with `Thread` or `ExecutorService` | Used with `ExecutorService` |
+
+Runnable r = () -> System.out.println("Runnable");
+
+Callable<Integer> c = () -> {
+    return 100;
+};
+
+
+Q5
+t.run() is a standard method call: When you call t.run(), you are simply telling the JVM to execute the code inside the run() method right now, within the thread that is currently executing the caller's code. No new thread is created; 
+no new stack is allocated. It is functionally identical to calling any other method in your code.
+
+t.start() is a request to the JVM: When you call t.start(), you are asking the JVM to perform a set of behind-the-scenes tasks:
+Create a new native thread in the underlying Operating System.
+Allocate a new call stack for that thread.
+Once the OS is ready, the JVM schedules this thread to run.
+The JVM then calls the run() method on your behalf inside that new execution context.
+
+Feature,t.start(),t.run()
+Execution,Starts a new thread.,Executes in the current thread.
+Concurrency,Achieves multi-threading.,No concurrency; purely sequential.
+Invoker,JVM calls the run() method.,You call the run() method manually.
+Lifecycle,Can be called only once; otherwise throws IllegalThreadStateException.,Can be called as many times as any other method.
+
+public class Test {
+    public static void main(String[] args) {
+
+        Thread t = new Thread(() -> {
+            for (int i = 0; i < 3; i++) {
+                System.out.println(
+                    Thread.currentThread().getName()
+                );
+            }
+        });
+
+        t.run()/t.start();
+        System.out.println("Main finished");
+    }
+}
+
+Output: 
+main
+main
+main
+Main finished
+
+vs 
+Thread-0
+Main finished
+Thread-0
+Thread-0
+
+
+Q6
+Implementing Runnable is better.
+Java's Single Inheritance: By implementing Runnable, you are still free to extend another class.
+Decoupling: It separates the task definition from the execution mechanism.
+Thread Pools: ExecutorService works with Runnable tasks, not Thread objects directly.
+
+
+Q7
+Defined in Thread.State:
+NEW: Created but not yet started.
+RUNNABLE: Executing in the JVM (includes ready to run).
+BLOCKED: Waiting for a monitor lock to enter a synchronized block/method.
+WAITING: Waiting indefinitely for another thread to perform a specific action (e.g., Object.wait(), Thread.join()).
+TIMED_WAITING: Waiting for a specified time (e.g., Thread.sleep(n)).
+TERMINATED: Completed execution.
+
+
+Q8
+public class DeadlockExample {
+    private static final Object lockA = new Object();
+    private static final Object lockB = new Object();
+
+    public static void main(String[] args) {
+        Thread t1 = new Thread(() -> {
+            synchronized (lockA) {
+                System.out.println("Thread 1 locked A");
+
+                synchronized (lockB) {
+                    System.out.println("Thread 1 locked B");
+                }
+            }
+        });
+
+        Thread t2 = new Thread(() -> {
+            synchronized (lockB) {
+                System.out.println("Thread 2 locked B");
+
+                synchronized (lockA) {
+                    System.out.println("Thread 2 locked A");
+                }
+            }
+        });
+
+        t1.start();
+        t2.start();
+    }
+}
+
+Deadlock happens because t1 holds lockA and waits for lockB, while t2 holds lockB and waits for lockA.
+Fix: always lock in the same order
+
+Thread t1 = new Thread(() -> {
+    synchronized (lockA) {
+        synchronized (lockB) {
+            System.out.println("Thread 1 done");
+        }
+    }
+});
+
+Thread t2 = new Thread(() -> {
+    synchronized (lockA) {
+        synchronized (lockB) {
+            System.out.println("Thread 2 done");
+        }
+    }
+});
+
+
+Q9
+Threads communicate primarily through shared memory and synchronization mechanisms:
+wait(), notify(), and notifyAll(): Methods used on object monitors to signal status changes
+
+class SharedResource {
+    private boolean ready = false;
+
+    public synchronized void produce() {
+        ready = true;
+        notify();
+    }
+
+    public synchronized void consume() throws InterruptedException {
+        while (!ready) {
+            wait();
+        }
+        System.out.println("Consumed");
+    }
+}
+
+Threads can also communicate through:
+BlockingQueue
+Future
+CountDownLatch
+Semaphore
+shared variables with proper synchronization
+
+
+Q10
+Object Lock (Instance Lock): Associated with a specific instance of a class. 
+Used by synchronized(this) or public synchronized void method(). 
+Multiple instances of the same class can execute these methods simultaneously if they are operating on different objects.
+
+public synchronized void method() {
+    // object lock
+}
+synchronized (this) {
+    // object lock
+}
+
+
+Class Lock: Associated with the Class object itself. 
+Used by synchronized(MyClass.class) or public static synchronized void method(). 
+Only one thread can execute a static synchronized method for that class across the entire JVM.
+public static synchronized void method() {
+    // class lock
+}
+
+synchronized (MyClass.class) {
+    // class lock
+}
+
+
+Q11
+The join() method allows one thread to wait for the completion of another. 
+If thread A calls t.join(), thread A will pause and remain in the WAITING state until thread t finishes its execution.
+Use case: When your main program needs the result of a background calculation before proceeding.
+
+Thread t = new Thread(() -> {
+    System.out.println("Task running");
+});
+
+t.start();
+t.join();   // main thread waits here until t finishes
+
+System.out.println("Task finished");
+
+
+Q12
+The yield() method is a hint to the thread scheduler that the current thread is willing to give up its current use of the processor.
+Behavior: The thread transitions from RUNNABLE to RUNNABLE (it stays ready). 
+The scheduler is free to ignore this hint. 
+It is rarely used in production code and is mostly useful for debugging or very specific low-level scheduling scenarios.
+
+
+Q13
+A ThreadPool is a pool of pre-instantiated, reusable threads.
+Instead of creating a new thread for every task, you submit tasks to the pool, and existing threads execute them.
+It manages a TaskQueue (typically a BlockingQueue) that holds pending tasks waiting for an available thread.
+
+Types of ThreadPools (via Executors factory):
+newFixedThreadPool(n): Fixed number of threads.
+newCachedThreadPool(): Creates new threads as needed, reuses idle ones (can grow unbounded).
+newSingleThreadExecutor(): One thread only, tasks executed sequentially.
+newScheduledThreadPool(n): For tasks that need to run periodically or after a delay.
+
+
+Q14
+Library: java.util.concurrent
+Main Interface: ExecutorService
+
+
+Q15
+You use the ExecutorService to submit tasks:
+executor.execute(Runnable): Does not return a result.
+executor.submit(Callable/Runnable): Returns a Future<?> object, 
+which you can use to track status or get the result.
+
+pool.execute(() -> {
+    System.out.println("Task running");
+});
+
+Future<Integer> future = pool.submit(() -> {
+    return 100;
+});
+Integer result = future.get();
+
+
+Q16
+ThreadPool is better because it:
+reuses threads
+reduces thread creation cost
+controls the number of concurrent threads
+avoids creating too many threads
+manages task queueing
+supports result handling with Future
+
+
+Q17
+shutdown()
+Graceful shutdown.
+pool.shutdown();
+It stops accepting new tasks, but already submitted tasks continue running.
+
+shutdownNow()
+Forceful attempt to stop.
+pool.shutdownNow();
+It tries to interrupt running tasks and returns tasks still waiting in the queue.
+List<Runnable> waitingTasks = pool.shutdownNow();
+
+
+Q18
+Atomic classes provide lock-free, thread-safe operations on single variables using CAS (Compare-And-Swap) CPU instructions.
+
+They are in: java.util.concurrent.atomic
+Common types:
+AtomicInteger
+AtomicLong
+AtomicBoolean
+AtomicReference
+AtomicIntegerArray
+AtomicLongArray
+AtomicReferenceArray
+
+Example:
+AtomicInteger count = new AtomicInteger(0);
+count.incrementAndGet(); // ++count
+count.getAndIncrement(); // count++
+count.decrementAndGet();
+count.addAndGet(5);
+count.compareAndSet(5, 10);
+count.get();
+
+When to use: 
+High-concurrency counters or state flags where performance is critical and synchronization overhead is too high.
+
+Example use:
+AtomicInteger counter = new AtomicInteger(0);
+Runnable task = () -> {
+    for (int i = 0; i < 1000; i++) {
+        counter.incrementAndGet();
+    }
+};
+
+
+Q19
+Concurrent Collections
+These are thread-safe data structures designed to be used in high-concurrency environments without manual synchronization.
+List: CopyOnWriteArrayList (Good for frequent reads, rare writes).
+Map: ConcurrentHashMap (Uses bucket-level locking, high performance).
+Queue: LinkedBlockingQueue, ArrayBlockingQueue (Useful for Producer-Consumer patterns).
+
+
+Q20
+1. synchronized
+Simple built-in lock.
+
+synchronized (this) {
+    // critical section
+}
+
+Advantage: easy to use.
+
+2. ReentrantLock
+More flexible than synchronized.
+
+Lock lock = new ReentrantLock();
+lock.lock();
+try {
+    // critical section
+} finally {
+    lock.unlock();
+}
+
+Advantages:
+can try lock
+can interrupt waiting
+can create fair lock
+supports multiple conditions
+
+3. ReadWriteLock
+Allows multiple readers but only one writer.
+
+ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+rwLock.readLock().lock();
+rwLock.readLock().unlock();
+
+rwLock.writeLock().lock();
+rwLock.writeLock().unlock();
+
+Advantage: good for read-heavy scenarios.
+
+4. StampedLock
+More advanced read/write lock.
+
+Advantage: Provides an "optimistic read" mode, which is even faster than ReadWriteLock because it doesn't always block. 
+good for high-read scenarios.
+
+5. Semaphore
+Controls how many threads can access a resource.
+
+Semaphore semaphore = new Semaphore(3);
+semaphore.acquire();
+semaphore.release();
+
+Advantage: useful for limiting access, such as max 3 users at a time.
+
+
+Q21 
+Future
+Future represents a result that will be available later.
+
+ExecutorService pool = Executors.newFixedThreadPool(2);
+
+Future<Integer> future = pool.submit(() -> {
+    return 100;
+});
+
+Integer result = future.get(); // blocks until result is ready
+
+Main methods:
+future.get();        // wait and get result
+future.cancel(true); // cancel task
+future.isDone();     // check if finished
+future.isCancelled();
+
+Problem: Future.get() blocks. It is not very flexible for chaining tasks.
+
+
+CompletableFuture
+CompletableFuture is an enhanced Future. 
+It supports async execution, callback, chaining, combining results, and exception handling.
+
+CompletableFuture<Integer> cf = CompletableFuture.supplyAsync(() -> {
+    return 100;
+});
+
+cf.thenApply(x -> x * 2)
+  .thenAccept(System.out::println);
+
+Main methods:
+supplyAsync()      // run async task with return value
+runAsync()         // run async task without return value
+thenApply()        // transform result
+thenAccept()       // consume result
+thenRun()          // run next step without using result
+thenCompose()      // chain another CompletableFuture
+thenCombine()      // combine two CompletableFutures
+exceptionally()    // handle exception
+handle()           // handle success or failure
+get()              // blocking get
+join()             // blocking get, unchecked exception
+
+
+Q23
+Solution 1: Using synchronized, wait(), and notifyAll()
+In this approach, the monitor object acts as the lock. 
+Threads wait for their turn and signal the other thread once they finish their increment.
+
+public class SynchronizedPrinter {
+    public static void main(String[] args) {
+        // The same instance is shared by both threads
+        PrintRunnable runnable = new PrintRunnable();
+        new Thread(runnable, "Thread-0").start();
+        new Thread(runnable, "Thread-1").start();
+    }
+
+    static class PrintRunnable implements Runnable {
+        private final Object monitor = new Object(); // Instance-based monitor
+        private int value = 1; // Instance-based counter
+
+        @Override
+        public void run() {
+            synchronized (monitor) {
+                while (value <= 10) {
+                    System.out.println(Thread.currentThread().getName() + ": " + value++);
+                    monitor.notifyAll();
+                    if (value <= 10) {
+                        try {
+                            monitor.wait();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+Solution 2: Using ReentrantLock and Condition
+This approach is more flexible and mirrors the structure of your PrintRunnable class. 
+We use a shared Lock and a Condition variable to coordinate the threads.
+
+public class OddEventPrinterLock {
+    private static int value = 1;
+    // Must be static to be shared across all instances of PrintRunnable
+    private static final Lock lock = new ReentrantLock();
+    private static final Condition condition = lock.newCondition();
+
+    public static void main(String[] args) {
+        PrintRunnable runnable = new PrintRunnable();
+        new Thread(runnable, "Thread-0").start();
+        new Thread(runnable, "Thread-1").start();
+    }
+
+    static class PrintRunnable implements Runnable {
+        @Override
+        public void run() {
+            lock.lock();
+            try {
+                while (value <= 10) {
+                    System.out.println(Thread.currentThread().getName() + ": " + value++);
+                    condition.signalAll();
+                    if (value <= 10) {
+                        try {
+                            condition.await();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+}
+
+
+Q24
+package com.chuwa.exercise.t08_multithreading;
+
+public class PrintNumber1 {
+    private static int n = 1;
+
+    public static void main(String[] args) {
+        Thread t1 = new Thread(PrintNumber1::printNumber);
+        Thread t2 = new Thread(PrintNumber1::printNumber);
+        Thread t3 = new Thread(PrintNumber1::printNumber);
+
+        t1.start();
+        t2.start();
+        t3.start();
+    }
+
+    private static synchronized void printNumber() {
+        int count = 10;
+
+        while (count-- > 0) {
+            System.out.println(
+                Thread.currentThread().getName() + ": " + n++
+            );
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+}
